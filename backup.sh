@@ -108,9 +108,14 @@ function backup() {
 function upload() {
 
 
-    #update lifecycle configuration
-    sed "s/RETENTION/${RETENTION_DAYS}/g;" lifecycle.json.tmpl > lifecycle.json
-    aws s3api put-bucket-lifecycle-configuration --bucket $S3_BUCKET --endpoint-url $S3_ENDPOINT --lifecycle-configuration file://lifecycle.json
+    #update lifecycle configuration (skip if endpoint doesn't support it)
+    if [[ "${SKIP_LIFECYCLE}" != "true" ]]; then
+        sed "s/RETENTION/${RETENTION_DAYS}/g;" lifecycle.json.tmpl > lifecycle.json
+        aws s3api put-bucket-lifecycle-configuration --bucket $S3_BUCKET --endpoint-url $S3_ENDPOINT --lifecycle-configuration file://lifecycle.json || \
+            echo "WARNING: lifecycle configuration failed (endpoint may not support it), continuing with upload"
+    else
+        echo "skipping lifecycle configuration (SKIP_LIFECYCLE=true)"
+    fi
 
     echo "Uploading dump to bucket $S3_BUCKET"
     aws s3 $AWS_ARGS cp ${BACKUP_FILE_GZIP} s3://$S3_BUCKET/$S3_PREFIX/ || exit 2

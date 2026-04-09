@@ -29,7 +29,8 @@ ENV DATA_DIR='/data' \
     S3_S3V4=no \
     RETENTION_DAYS=30 \
     BACKUP_FILE_DATE_FORMAT='%Y-%m-%dT%H_%M_%SZ' \
-    SKIP_SENDS='true'
+    SKIP_SENDS='true' \
+    SKIP_LIFECYCLE='false'
 
 WORKDIR /app
 
