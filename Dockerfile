@@ -1,21 +1,20 @@
-FROM alpine:3.16
+FROM alpine:3.20
 
 RUN apk -v --update add \
         python3 \
-        py-pip \
+        py3-pip \
         groff \
         less \
         curl \
-        py-crcmod \
+        py3-crcmod \
         bash \
         libc6-compat \
         gnupg \
-        coreutils \        
+        coreutils \
         gzip \
-        sqlite \        
+        sqlite \
         && \
-    pip3 install --upgrade awscli s3cmd python-magic six && \
-#    apk -v --purge del py-pip && \
+    pip3 install --break-system-packages --upgrade awscli s3cmd python-magic six && \
     rm /var/cache/apk/*
 
 RUN addgroup -S cloudbackup && adduser -S cloudbackup -G cloudbackup -u 1000
