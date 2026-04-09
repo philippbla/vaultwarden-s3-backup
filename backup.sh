@@ -97,7 +97,11 @@ function backup() {
     backup_config
     backup_rsakey
     backup_attachments
-    backup_sends
+    if [[ "${SKIP_SENDS}" != "true" ]]; then
+        backup_sends
+    else
+        echo "skipping sends backup (SKIP_SENDS=true)"
+    fi
 
 }
 

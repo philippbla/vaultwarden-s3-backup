@@ -1,0 +1,75 @@
+name: Sync upstream and build image
+
+on:
+  schedule:
+    # Check for upstream changes daily at 04:00 UTC
+    - cron: '0 4 * * *'
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+jobs:
+  sync:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    outputs:
+      changed: ${{ steps.sync.outputs.changed }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Sync upstream
+        id: sync
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git remote add upstream https://github.com/witcom-gmbh/vaultwarden-s3-backup.git || true
+          git fetch upstream main
+
+          # Check if upstream has new commits
+          LOCAL=$(git rev-parse HEAD)
+          MERGE_BASE=$(git merge-base HEAD upstream/main)
+          UPSTREAM=$(git rev-parse upstream/main)
+
+          if [ "$MERGE_BASE" = "$UPSTREAM" ]; then
+            echo "Already up to date with upstream"
+            echo "changed=false" >> "$GITHUB_OUTPUT"
+          else
+            echo "Merging upstream changes..."
+            git merge upstream/main --no-edit || {
+              echo "Merge conflict - manual intervention needed"
+              exit 1
+            }
+            git push origin main
+            echo "changed=true" >> "$GITHUB_OUTPUT"
+          fi
+
+  build:
+    needs: sync
+    if: always() && needs.sync.result == 'success'
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: main
+
+      - name: Log in to GHCR
+        uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Build and push image
+        uses: docker/build-push-action@v5
+        with:
+          context: .
+          push: true
+          tags: |
+            ghcr.io/${{ github.repository_owner }}/vaultwarden-s3-backup:latest
+            ghcr.io/${{ github.repository_owner }}/vaultwarden-s3-backup:no-sends
