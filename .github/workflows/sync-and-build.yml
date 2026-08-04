@@ -48,7 +48,7 @@ jobs:
 
   build:
     needs: sync
-    if: always() && needs.sync.result == 'success'
+    if: needs.sync.outputs.changed == 'true' || github.event_name != 'schedule'
     runs-on: ubuntu-latest
     permissions:
       contents: read
