@@ -16,7 +16,12 @@ $ docker run -e S3_ACCESS_KEY_ID=key -e S3_SECRET_ACCESS_KEY=secret -e S3_BUCKET
 - `S3_PREFIX` path prefix in your bucket (default: 'backup')
 - `S3_ENDPOINT` the AWS Endpoint URL, for S3 Compliant APIs such as [minio](https://minio.io) (default: none)
 - `S3_S3V4` set to `yes` to enable AWS Signature Version 4, required for [minio](https://minio.io) servers (default: no)
-- `RETENTION_DAYS` Defines a bucket-policy in S3
+- `RETENTION_DAYS` backups older than this are deleted after each run (default: 30)
+- `PRUNE` set to `false` to disable deleting old backups (default: true)
+- `MIN_KEEP` never prune below this many backups, even if they are old (default: 7)
+- `SKIP_LIFECYCLE` set to `false` to also push an S3 lifecycle rule with `RETENTION_DAYS`; Cloudflare R2 rejects it (default: true)
+- `HC_PING_URL` healthchecks.io ping URL. Each run pings `/start`, then success or `/fail` with the run log as body. Slug URLs with `?create=1` work, e.g. `https://hc-ping.com/<ping-key>/vaultwarden-backup?create=1` (default: none)
+- `CRON_TIME` cron expression for scheduled runs; without it the container runs once and exits
 
 ## Restoring
 Restoring is possbible ,too ;-) Restoring is an interactive job, so it has to be done like this

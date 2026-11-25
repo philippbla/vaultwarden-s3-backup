@@ -30,7 +30,10 @@ ENV DATA_DIR='/data' \
     RETENTION_DAYS=30 \
     BACKUP_FILE_DATE_FORMAT='%Y-%m-%dT%H_%M_%SZ' \
     SKIP_SENDS='true' \
-    SKIP_LIFECYCLE='false'
+    SKIP_LIFECYCLE='true' \
+    PRUNE='true' \
+    MIN_KEEP=7 \
+    HC_PING_URL=''
 
 WORKDIR /app
 

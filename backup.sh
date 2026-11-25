@@ -118,7 +118,30 @@ function upload() {
     fi
 
     echo "Uploading dump to bucket $S3_BUCKET"
-    aws s3 $AWS_ARGS cp ${BACKUP_FILE_GZIP} s3://$S3_BUCKET/$S3_PREFIX/ || exit 2
+    aws s3 $AWS_ARGS cp --no-progress ${BACKUP_FILE_GZIP} s3://$S3_BUCKET/$S3_PREFIX/ || exit 2
+
+}
+
+function prune() {
+
+    if [[ "${PRUNE}" != "true" ]]; then
+        echo "skipping prune (PRUNE=${PRUNE})"
+        return
+    fi
+
+    # delete backups older than RETENTION_DAYS, but always keep the newest MIN_KEEP
+    local CUTOFF="$(date -u -d "-${RETENTION_DAYS} days" +%Y-%m-%d)"
+    echo "pruning backups older than ${CUTOFF} (keeping at least ${MIN_KEEP})"
+
+    local LISTING
+    LISTING="$(aws s3 $AWS_ARGS ls s3://$S3_BUCKET/$S3_PREFIX/ | awk '$4 ~ /^backup\..*\.tar\.gz$/' | sort)" || exit 3
+    local TOTAL=$(echo "${LISTING}" | grep -c . || true)
+    local MAX_DELETE=$(( TOTAL > MIN_KEEP ? TOTAL - MIN_KEEP : 0 ))
+    echo "${TOTAL} backups in bucket"
+
+    echo "${LISTING}" | awk -v cutoff="${CUTOFF}" 'NF && $1 < cutoff {print $4}' | head -n "${MAX_DELETE}" | while read -r KEY; do
+        aws s3 $AWS_ARGS rm "s3://$S3_BUCKET/$S3_PREFIX/${KEY}" || exit 3
+    done
 
 }
 
@@ -133,4 +156,5 @@ backup_init
 backup
 backup_package
 upload
+prune
 cleanup
